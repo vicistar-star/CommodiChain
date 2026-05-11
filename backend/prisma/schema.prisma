@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String  @id @default(cuid())
+  stellarPublicKey  String  @unique
+  email             String? @unique
+  name              String?
+  role              Role    @default(USER)
+  isActive          Boolean @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  commodities       Commodity[]
+  nftTransactions   NFTTransaction[]
+  authSessions      AuthSession[]
+
+  @@map("users")
+}
+
+model Commodity {
+  id              String    @id @default(cuid())
+  batchId         String    @unique
+  type            String
+  weight          String
+  purity          String?
+  origin          String
+  productionDate  DateTime?
+  status          CommodityStatus @default(REGISTERED)
+  producerId      String
+  custodianId     String?
+  inspectorId     String?
+  inspectionDate  DateTime?
+  reportHash      String?
+  imageHash       String?
+  metadataIpfsHash String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  producer        User      @relation(fields: [producerId], references: [id])
+  nft             NFT?
+
+  @@map("commodities")
+}
+
+model NFT {
+  id              String  @id @default(cuid())
+  assetCode       String  @unique
+  issuerPublicKey String
+  currentOwner    String
+  ipfsHash        String
+  transactionHash String
+  commodityId     String  @unique
+  isBurned        Boolean @default(false)
+  burnedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  commodity       Commodity @relation(fields: [commodityId], references: [id])
+  transactions    NFTTransaction[]
+
+  @@map("nfts")
+}
+
+model NFTTransaction {
+  id              String           @id @default(cuid())
+  nftId           String
+  fromAddress     String
+  toAddress       String
+  transactionType TransactionType
+  transactionHash String
+  stellarMemo     String?
+  createdAt       DateTime         @default(now())
+
+  // Relations
+  nft             NFT              @relation(fields: [nftId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  userId          String
+
+  @@map("nft_transactions")
+}
+
+model AuthSession {
+  id            String   @id @default(cuid())
+  userId        String
+  challengeXdr  String
+  token         String   @unique
+  expiresAt     DateTime
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@map("auth_sessions")
+}
+
+model Custodian {
+  id          String @id @default(cuid())
+  name        String
+  address     String
+  contact     String
+  licenseNo   String @unique
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("custodians")
+}
+
+model Inspector {
+  id          String @id @default(cuid())
+  name        String
+  organization String
+  contact     String
+  licenseNo   String @unique
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("inspectors")
+}
+
+enum Role {
+  USER
+  ADMIN
+  CUSTODIAN
+  INSPECTOR
+}
+
+enum CommodityStatus {
+  REGISTERED
+  VERIFIED
+  STORED
+  TRANSFERRED
+  REDEEMED
+}
+
+enum TransactionType {
+  MINTED
+  TRANSFERRED
+  BURNED
+}

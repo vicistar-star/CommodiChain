@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "commodity_nft",
+    "custodian_registry",
+    "compliance_engine",
+]
+
+[profile.release.package.commodity_nft]
+codegen-units = 1
+opt-level = "z"
+overflow-checks = true
+
+[profile.release.package.custodian_registry]
+codegen-units = 1
+opt-level = "z"
+overflow-checks = true
+
+[profile.release.package.compliance_engine]
+codegen-units = 1
+opt-level = "z"
+overflow-checks = true
