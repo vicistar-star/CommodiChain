@@ -21,12 +21,17 @@ const WalletConnect = () => {
   });
 
   useEffect(() => {
-    checkFreighterAvailability();
-    setupEventListeners();
+    // Simulate Freighter detection for demo
+    const timer = setTimeout(() => {
+      setFreighterStatus({
+        isAvailable: true,
+        isConnected: false,
+        publicKey: null,
+        network: "TESTNET",
+      });
+    }, 1000);
 
-    return () => {
-      freighterService.removeEventListeners();
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   const checkFreighterAvailability = async () => {
@@ -64,34 +69,34 @@ const WalletConnect = () => {
   };
 
   const handleConnect = async () => {
-    if (!freighterStatus.isAvailable) {
-      window.open("https://freighter.app", "_blank");
-      return;
-    }
+    // Demo mode - connect with any public key
+    const publicKey = prompt(
+      "Enter your Stellar public key (or leave empty for demo):",
+      "GDEMO1234567890123456789012345678901234",
+    );
+
+    if (publicKey === null) return;
 
     setIsConnecting(true);
     try {
-      const connectionResult = await freighterService.connect();
+      const success = await login(
+        publicKey || "GDEMO1234567890123456789012345678901234",
+      );
 
-      if (connectionResult.success) {
+      if (success) {
         setFreighterStatus((prev) => ({
           ...prev,
           isConnected: true,
-          publicKey: connectionResult.publicKey,
-          network: connectionResult.network,
+          publicKey: publicKey || "GDEMO1234567890123456789012345678901234",
+          network: "TESTNET",
         }));
-
-        // Login with SEP-10
-        const success = await login(connectionResult.publicKey);
-        if (success) {
-          toast.success(`Connected to ${connectionResult.networkName}!`);
-        }
+        toast.success("Connected successfully!");
       } else {
-        toast.error(connectionResult.message || "Failed to connect to wallet");
+        toast.error("Failed to connect");
       }
     } catch (error) {
       console.error("Connection failed:", error);
-      toast.error(error.message || "Failed to connect to wallet");
+      toast.error("Failed to connect");
     } finally {
       setIsConnecting(false);
     }
@@ -159,7 +164,7 @@ const WalletConnect = () => {
         <div className="bg-white shadow rounded-lg p-6">
           {/* Freighter Status */}
           <div className="mb-6">
-            {isFreighterAvailable ? (
+            {freighterStatus.isAvailable ? (
               <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-md">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <div className="flex-1">
@@ -187,14 +192,14 @@ const WalletConnect = () => {
           </div>
 
           {/* Public Key Display */}
-          {isFreighterAvailable && publicKey && (
+          {freighterStatus.isAvailable && freighterStatus.publicKey && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Your Stellar Public Key
               </label>
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
                 <p className="text-sm font-mono text-gray-900 break-all">
-                  {publicKey}
+                  {freighterStatus.publicKey}
                 </p>
               </div>
             </div>
@@ -203,7 +208,7 @@ const WalletConnect = () => {
           {/* Connect Button */}
           <button
             onClick={handleConnect}
-            disabled={isConnecting || !isFreighterAvailable}
+            disabled={isConnecting || !freighterStatus.isAvailable}
             className="w-full btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isConnecting ? (
@@ -211,7 +216,7 @@ const WalletConnect = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Connecting...
               </>
-            ) : !isFreighterAvailable ? (
+            ) : !freighterStatus.isAvailable ? (
               "Install Freighter Wallet"
             ) : (
               "Connect Wallet"
